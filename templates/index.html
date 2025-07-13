@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WB L0 — Заказ</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input[type=text] { width: 100%; padding: 10px; margin-top: 10px; }
+        button { margin-top: 10px; padding: 10px 20px; }
+        .section { margin-top: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>WB L0 — Получить заказ</h1>
+    <form id="orderForm">
+        <label for="uid">Введите Order UID:</label><br/>
+        <input type="text" id="uid" name="uid" placeholder="Например: edGJsirZsGV2iWiP" required>
+        <br/>
+        <button type="submit">Получить заказ</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const uid = document.getElementById('uid').value.trim();
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            try {
+                const res = await fetch(`/order/${uid}`);
+                if (!res.ok) {
+                    throw new Error('Заказ не найден');
+                }
+                const order = await res.json();
+
+                // Рендерим данные
+                resultDiv.innerHTML = renderOrder(order);
+            } catch (err) {
+                resultDiv.innerHTML = `<p style="color:red;">Ошибка: ${err.message}</p>`;
+            }
+        });
+
+        function renderOrder(order) {
+            return `
+                <div class="section">
+                    <h2>Информация о заказе</h2>
+                    <p><strong>Order UID:</strong> ${order.order_uid}</p>
+                    <p><strong>Track Number:</strong> ${order.track_number}</p>
+                    <p><strong>Дата создания:</strong> ${new Date(order.date_created).toLocaleString()}</p>
+                    <p><strong>Клиент:</strong> ${order.customer_id}</p>
+                </div>
+
+                <div class="section">
+                    <h2>Доставка</h2>
+                    <table>
+                        <tr><th>Имя</th><td>${order.delivery.name}</td></tr>
+                        <tr><th>Телефон</th><td>${order.delivery.phone}</td></tr>
+                        <tr><th>Email</th><td>${order.delivery.email}</td></tr>
+                        <tr><th>Адрес</th><td>${order.delivery.address}, ${order.delivery.city}, ${order.delivery.region}, ${order.delivery.zip}</td></tr>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2>Оплата</h2>
+                    <table>
+                        <tr><th>Сумма</th><td>${order.payment.amount} ${order.payment.currency}</td></tr>
+                        <tr><th>Платёжная система</th><td>${order.payment.provider}</td></tr>
+                        <tr><th>Банк</th><td>${order.payment.bank}</td></tr>
+                        <tr><th>Дата оплаты</th><td>${new Date(order.payment.payment_dt).toLocaleString()}</td></tr>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2>Товары</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Бренд</th>
+                                <th>Цена</th>
+                                <th>Скидка</th>
+                                <th>Итого</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${order.items.map(item => `
+                                <tr>
+                                    <td>${item.name}</td>
+                                    <td>${item.brand}</td>
+                                    <td>${item.price}</td>
+                                    <td>${item.sale}%</td>
+                                    <td>${item.total_price}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
